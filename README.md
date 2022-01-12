@@ -37,7 +37,7 @@ python3 dqn.py --render
 python3 ddpg.py --render
 ```
 <br>By default, the game will be rendered during testing. If you want to render the episodes during training, you can modify the code by yourselves(same way as testing).
-<br><br>Please make sure that you have an GUI interface before rendering.
+<br><br>Please make sure that you have an GUI interface for rendering.
 
 
 
