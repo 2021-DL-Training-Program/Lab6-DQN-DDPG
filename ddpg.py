@@ -10,6 +10,7 @@ import gym
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.utils.tensorboard import SummaryWriter
 
 
 class GaussianNoise:
@@ -191,7 +192,7 @@ class DDPG:
             self._critic_opt.load_state_dict(model['critic_opt'])
 
 
-def train(args, env, agent):
+def train(args, env, agent, writer):
     print('Start Training')
     total_steps = 0
     ewma_reward = 0
@@ -216,6 +217,8 @@ def train(args, env, agent):
             total_steps += 1
             if done:
                 ewma_reward = 0.05 * total_reward + (1 - 0.05) * ewma_reward
+                writer.add_scalar('Train/Episode Reward', total_reward, episode)
+                writer.add_scalar('Train/Ewma Reward', ewma_reward, episode)
                 print(
                     'Step: {}\tEpisode: {}\tLength: {:3d}\tTotal reward: {:.2f}\tEwma reward: {:.2f}'
                     .format(total_steps, episode, t, total_reward,
@@ -224,7 +227,7 @@ def train(args, env, agent):
     env.close()
 
 
-def test(args, env, agent):
+def test(args, env, agent, writer):
     print('Start Testing')
     seeds = (args.seed + i for i in range(10))
     rewards = []
@@ -233,12 +236,15 @@ def test(args, env, agent):
         env.seed(seed)
         state = env.reset()
         
-        ## TODO ##
-        # ...
-        #     if done:
-        raise NotImplementedError
-        
+        for t in itertools.count(start=1):
+            if args.render:
+                env.render()
+            ## TODO ##
+            # ...
+            raise NotImplementedError
+            
             if done:
+                writer.add_scalar('Test/Episode Reward', total_reward, n_episode)
                 rewards.append(total_reward)
                 print('Episode: {}\tLength: {:3d}\tTotal reward: {:.2f}'.format(n_episode, t, total_reward))
                 break
@@ -251,6 +257,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-d', '--device', default='cuda')
     parser.add_argument('-m', '--model', default='ddpg.pth')
+    parser.add_argument('--logdir', default='log/ddpg')
     # train
     parser.add_argument('--warmup', default=10000, type=int)
     parser.add_argument('--episode', default=1200, type=int)
@@ -269,11 +276,12 @@ def main():
     ## main ##
     env = gym.make('LunarLanderContinuous-v2')
     agent = DDPG(args)
+    writer = SummaryWriter(args.logdir)
     if not args.test_only:
-        train(args, env, agent)
+        train(args, env, agent, writer)
         agent.save(args.model)
     agent.load(args.model)
-    test(args, env, agent)
+    test(args, env, agent, writer)
 
 
 if __name__ == '__main__':
